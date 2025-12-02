@@ -1,6 +1,6 @@
 # Azure OpenAI Chatbot
 
-A conversational AI chatbot powered by Azure OpenAI Service (GPT-3.5-turbo).
+A conversational AI chatbot powered by Azure OpenAI Service (GPT-5.0).
 
 ## Features
 - Real-time chat interface
