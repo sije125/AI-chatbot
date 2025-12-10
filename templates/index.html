@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure AI Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Azure AI Chatbot</h1>
+            <div>
+                <button id="themeToggle" class="theme-toggle">🌙 Dark Mode</button>
+                <button id="resetBtn" class="reset-btn">Reset Chat</button>
+            </div>
+        </div>
+        
+        <div id="chatBox" class="chat-box">
+            <div class="message bot-message">
+                <strong>Bot:</strong> Hello! I'm an AI assistant powered by Azure OpenAI. How can I help you today?
+            </div>
+        </div>
+        
+        <div class="input-area">
+            <input 
+                type="text" 
+                id="userInput" 
+                placeholder="Type your message here..." 
+                autocomplete="off"
+            >
+            <button id="sendBtn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const themeToggle = document.getElementById('themeToggle');
+
+        // Theme toggle functionality
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+
+            // Update button text
+            themeToggle.textContent = isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode';
+
+            // Save preference to localStorage
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+        }
+
+        // Load saved theme on page load
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeToggle.textContent = '☀️ Light Mode';
+            }
+        }
+
+        // Initialize theme on page load
+        loadTheme();
+
+        // Send message
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Display user message
+            addMessage('user', message);
+            userInput.value = '';
+
+            // Show loading
+            const loadingDiv = addMessage('bot', 'Thinking...');
+            
+            try {
+                // Call backend
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                
+                // Remove loading
+                loadingDiv.remove();
+                
+                // Display bot response
+                if (data.response) {
+                    addMessage('bot', data.response);
+                } else if (data.error) {
+                    addMessage('bot', 'Error: ' + data.error);
+                }
+            } catch (error) {
+                loadingDiv.remove();
+                addMessage('bot', 'Error: Could not connect to server');
+            }
+        }
+
+        // Add message to chat
+        function addMessage(role, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}-message`;
+            messageDiv.innerHTML = `<strong>${role === 'user' ? 'You' : 'Bot'}:</strong> ${content}`;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return messageDiv;
+        }
+
+        // Reset conversation
+        async function resetChat() {
+            await fetch('/reset', { method: 'POST' });
+            chatBox.innerHTML = '<div class="message bot-message"><strong>Bot:</strong> Chat reset. How can I help you?</div>';
+        }
+
+        // Event listeners
+        sendBtn.addEventListener('click', sendMessage);
+        resetBtn.addEventListener('click', resetChat);
+        themeToggle.addEventListener('click', toggleTheme);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
